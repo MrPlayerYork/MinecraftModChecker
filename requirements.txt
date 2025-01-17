@@ -1,0 +1,3 @@
+requests>=2.31.0
+packaging>=23.2
+rich>=13.7.0
