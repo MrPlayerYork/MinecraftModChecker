@@ -573,9 +573,13 @@ def find_common_version(mods: List[ModInfo]) -> Optional[str]:
     if not common_versions:
         return None
         
-    # Sort versions and return the oldest one that's not a snapshot
-    sorted_versions = sort_minecraft_versions([v for v in common_versions if not 'w' in v and not 'snapshot' in v])
-    return sorted_versions[0] if sorted_versions else None
+    # Sort versions in descending order and return the oldest one that's not a snapshot
+    # sort_minecraft_versions returns versions from newest to oldest, so we take
+    # the last element to get the oldest compatible version.
+    sorted_versions = sort_minecraft_versions(
+        [v for v in common_versions if 'w' not in v and 'snapshot' not in v]
+    )
+    return sorted_versions[-1] if sorted_versions else None
 
 def check_loader_compatibility(mods: List[Dict[str, str]], version: str, loader: str) -> Tuple[List[ModInfo], int]:
     """Check how many mods are compatible with a specific loader and version."""
