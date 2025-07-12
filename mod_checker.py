@@ -120,6 +120,9 @@ class ModInfo:
     filename: Optional[str] = None
     error: Optional[str] = None
 
+# Shared cache instance for all API requests
+cache = ModrinthCache()
+
 def parse_minecraft_version(ver: str) -> version.Version:
     """Parse a Minecraft version string into a comparable version object."""
     try:
@@ -226,7 +229,6 @@ def extract_modrinth_links(input_file: str) -> List[Dict[str, str]]:
 
 def check_mod_version(slug: str, target_version: str, loader_type: str) -> ModInfo:
     """Check if a mod is available for the specified Minecraft version and loader type."""
-    cache = ModrinthCache()
     cached_data = cache.get_cached_data(slug, target_version, loader_type)
     if cached_data:
         return ModInfo(**cached_data)
@@ -366,7 +368,6 @@ def prompt_user(question: str) -> bool:
 
 def get_mod_dependencies(version_id: str) -> List[Dict[str, str]]:
     """Get dependencies for a specific mod version."""
-    cache = ModrinthCache()
     
     # For dependencies, we'll use a special cache key format
     cached_data = cache.get_cached_data("deps", version_id, "all")
@@ -395,7 +396,6 @@ def get_mod_dependencies(version_id: str) -> List[Dict[str, str]]:
 
 def get_mod_name(mod_id: str) -> Optional[str]:
     """Get the mod name from its ID using Modrinth API."""
-    cache = ModrinthCache()
     
     # For mod names, we'll use a special cache key format
     cached_data = cache.get_cached_data("names", mod_id, "all")
