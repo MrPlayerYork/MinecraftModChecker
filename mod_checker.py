@@ -150,13 +150,13 @@ class ModInfo:
     versions: List[str]
     available: bool
     version_id: Optional[str] = None
-    loader_types: Set[str] = None
+    loader_types: Optional[Set[str]] = None
     download_url: Optional[str] = None
     filename: Optional[str] = None
     error: Optional[str] = None
 
 # Shared cache instance for all API requests
-cache = ModrinthCache()
+cache: ModrinthCache = ModrinthCache()
 
 def parse_minecraft_version(ver: str) -> version.Version:
     """Parse a Minecraft version string into a comparable version object."""
@@ -172,7 +172,7 @@ def sort_minecraft_versions(versions: List[str]) -> List[str]:
 
 def check_version_compatibility(mods_info: List[ModInfo], test_version: str, loader_type: str) -> VersionCheckResult:
     """Check compatibility of all mods for a specific version."""
-    incompatible_mods = []
+    incompatible_mods: List[Tuple[str, List[str]]] = []
     
     for mod in mods_info:
         result = check_mod_version(mod.slug, test_version, loader_type)
@@ -189,7 +189,7 @@ def find_next_compatible_version(mods_info: List[ModInfo], current_version: str,
                                loader_type: str, allow_downgrade: bool = False) -> Tuple[Optional[str], List[VersionCheckResult]]:
     """Find the next Minecraft version where all mods are compatible."""
     # Get all available versions for each mod
-    all_versions = set()
+    all_versions: Set[str] = set()
     for mod in mods_info:
         all_versions.update(mod.versions)
     
@@ -201,7 +201,7 @@ def find_next_compatible_version(mods_info: List[ModInfo], current_version: str,
     if not allow_downgrade:
         sorted_versions = [v for v in sorted_versions if parse_minecraft_version(v) >= current_ver]
     
-    version_checks = []
+    version_checks: List[VersionCheckResult] = []
     # Try each version
     for test_version in sorted_versions:
         if test_version == current_version:
@@ -222,7 +222,7 @@ def extract_modrinth_links(input_file: str) -> List[Dict[str, str]]:
     - Full Modrinth URLs (https://modrinth.com/mod/some-mod)
     - Markdown links to Modrinth
     """
-    mods = []
+    mods: List[Dict[str, str]] = []
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
     
@@ -418,7 +418,7 @@ def get_mod_dependencies(version_id: str) -> List[Dict[str, str]]:
         response.raise_for_status()
         version_data = response.json()
         
-        dependencies = []
+        dependencies: List[Dict[str, str]] = []
         if 'dependencies' in version_data:
             dependencies = [
                 dep for dep in version_data['dependencies']
@@ -460,7 +460,7 @@ def process_dependencies(mod_info: ModInfo, version: str, loader: str,
     if not mod_info.version_id or not mod_info.available:
         return []
     
-    dependency_results = []
+    dependency_results: List[ModInfo] = []
     dependencies = get_mod_dependencies(mod_info.version_id)
     
     if dependencies:
@@ -493,7 +493,7 @@ def generate_compatibility_report(original_version: str, final_version: str,
                                results: List[ModInfo], dependencies: List[ModInfo],
                                version_checks: Optional[List[VersionCheckResult]] = None) -> str:
     """Generate a detailed compatibility report."""
-    report = []
+    report: List[str] = []
     now = datetime.now()
     
     # Header
@@ -563,7 +563,7 @@ def generate_compatibility_report(original_version: str, final_version: str,
         report.append("")
     
     # Incompatible Mods
-    incompatible_mods = [mod for mod in results if not mod.available]
+    incompatible_mods: List[ModInfo] = [mod for mod in results if not mod.available]
     if incompatible_mods:
         report.append("## Incompatible Mods")
         for mod in incompatible_mods:
@@ -582,10 +582,10 @@ def generate_compatibility_report(original_version: str, final_version: str,
 def check_alternative_loaders(mods: List[Dict[str, str]], version: str, current_loader: str) -> Dict[str, List[ModInfo]]:
     """Check if other loaders might be more compatible."""
     all_loaders = {'fabric', 'forge', 'quilt', 'neoforge'} - {current_loader}
-    loader_results = {}
+    loader_results: Dict[str, List[ModInfo]] = {}
     
     for loader in all_loaders:
-        results = []
+        results: List[ModInfo] = []
         for mod in mods:
             result = check_mod_version(mod['slug'], version, loader)
             results.append(result)
@@ -621,7 +621,7 @@ def find_common_version(mods: List[ModInfo]) -> Optional[str]:
 
 def check_loader_compatibility(mods: List[Dict[str, str]], version: str, loader: str) -> Tuple[List[ModInfo], int]:
     """Check how many mods are compatible with a specific loader and version."""
-    results = []
+    results: List[ModInfo] = []
     compatible_count = 0
     for mod in mods:
         result = check_mod_version(mod['slug'], version, loader)
@@ -634,10 +634,10 @@ def find_best_loader(mods: List[Dict[str, str]], version: str, current_loader: s
                     preferred_loader: Optional[str] = None) -> Tuple[str, List[ModInfo], Dict[str, int]]:
     """Find the loader that supports the most mods for a given version."""
     all_loaders = {'fabric', 'forge', 'neoforge', 'quilt'}
-    loader_stats = {}  # Store compatibility stats for each loader
+    loader_stats: Dict[str, int] = {}  # Store compatibility stats for each loader
     best_loader = current_loader
     best_count = 0
-    best_results = []
+    best_results: List[ModInfo] = []
     
     # Check each loader
     for loader in all_loaders:
@@ -715,21 +715,21 @@ def main():
     if args.preferred_alt_loader:
         console.print(f"[dim]Preferred alternative loader: {args.preferred_alt_loader}[/]")
     
-    processed_mods = set()
-    mods = extract_modrinth_links(args.input)
-    version_checks = []
+    processed_mods: Set[str] = set()
+    mods: List[Dict[str, str]] = extract_modrinth_links(args.input)
+    version_checks: List[VersionCheckResult] = []
     
     if not mods:
         return
     
     # Initial compatibility check
-    results = []
+    results: List[ModInfo] = []
     for mod in mods:
         result = check_mod_version(mod['slug'], args.version, args.loader)
         results.append(result)
     
     # Check if any mods are incompatible
-    incompatible_mods = [mod for mod in results if not mod.available]
+    incompatible_mods: List[ModInfo] = [mod for mod in results if not mod.available]
     
     if incompatible_mods:
         console.print(f"\nSome mods are not compatible with Minecraft {args.version} using {args.loader}:")
@@ -772,7 +772,7 @@ def main():
                         results = best_results
                     elif prompt_user(f"Would you like to use version {common_version} with {args.loader}?"):
                         args.version = common_version
-                        results = []
+                        results: List[ModInfo] = []
                         for mod in mods:
                             result = check_mod_version(mod['slug'], args.version, args.loader)
                             results.append(result)
@@ -785,7 +785,7 @@ def main():
                     args.version = common_version
                 
                 # Update results with new version
-                results = []
+                results: List[ModInfo] = []
                 for mod in mods:
                     result = check_mod_version(mod['slug'], args.version, args.loader)
                     results.append(result)
@@ -844,7 +844,7 @@ def main():
     ) as progress:
         for mod in results:
             status = "[green]+[/]" if mod.available else "[red]-[/]"
-            details = []
+            details: List[str] = []
             
             if mod.available:
                 if args.download:
@@ -869,7 +869,7 @@ def main():
     # Process dependencies if downloading
     if args.download:
         console.print("\nChecking for required dependencies...")
-        dependencies = []
+        dependencies: List[ModInfo] = []
         
         with Progress(
             SpinnerColumn(),
