@@ -57,13 +57,14 @@ class ModrinthCache:
         cache_file = self._get_mod_cache_file(mod_slug)
         if cache_file.exists():
             try:
-                cache_data = json.loads(cache_file.read_text())
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    cache_data = json.load(f)
                 version_key = f"{version}_{loader}"
                 if version_key in cache_data:
                     data = cache_data[version_key]
                     if time.time() - data['cached_at'] < CACHE_DURATION:
                         return data['data']
-            except (json.JSONDecodeError, KeyError):
+            except (json.JSONDecodeError, KeyError, OSError):
                 pass
         return None
 
@@ -75,8 +76,9 @@ class ModrinthCache:
         # Load existing cache or create new
         if cache_file.exists():
             try:
-                cache_data = json.loads(cache_file.read_text())
-            except json.JSONDecodeError:
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    cache_data = json.load(f)
+            except (json.JSONDecodeError, OSError):
                 cache_data = {}
         else:
             cache_data = {}
@@ -88,7 +90,8 @@ class ModrinthCache:
         }
         
         # Write updated cache
-        cache_file.write_text(json.dumps(cache_data, indent=2))
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(cache_data, f, separators=(',', ':'))
 
     def make_request(self, url: str) -> requests.Response:
         """Make a rate-limited request."""
