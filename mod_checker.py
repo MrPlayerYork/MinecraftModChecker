@@ -32,6 +32,38 @@ class ModrinthCache:
         self.last_request_time = 0
         self.min_request_interval = 0.1  # Minimum time between requests in seconds
 
+    def get_all_data(self, mod_slug: str) -> Optional[dict]:
+        """Return cached project and version list if available."""
+        cache_file = self._get_mod_cache_file(mod_slug)
+        if cache_file.exists():
+            try:
+                cache_data = json.loads(cache_file.read_text())
+                key = f"{mod_slug}_all"
+                if key in cache_data:
+                    entry = cache_data[key]
+                    if time.time() - entry["cached_at"] < CACHE_DURATION:
+                        return entry["data"]
+            except (json.JSONDecodeError, KeyError):
+                pass
+        return None
+
+    def cache_all_data(self, mod_slug: str, data: dict) -> None:
+        """Cache project info and all versions."""
+        cache_file = self._get_mod_cache_file(mod_slug)
+        if cache_file.exists():
+            try:
+                cache_data = json.loads(cache_file.read_text())
+            except json.JSONDecodeError:
+                cache_data = {}
+        else:
+            cache_data = {}
+
+        cache_data[f"{mod_slug}_all"] = {
+            "cached_at": time.time(),
+            "data": data,
+        }
+        cache_file.write_text(json.dumps(cache_data, indent=2))
+
     def update_rate_limits(self, headers: Dict[str, str]) -> None:
         """Update rate limit information from response headers."""
         self.rate_limit = int(headers.get('X-Ratelimit-Limit', 300))
@@ -230,20 +262,25 @@ def check_mod_version(slug: str, target_version: str, loader_type: str) -> ModIn
     cached_data = cache.get_cached_data(slug, target_version, loader_type)
     if cached_data:
         return ModInfo(**cached_data)
-    
-    # If not in cache, make API request
+
     try:
-        url = f"https://api.modrinth.com/v2/project/{slug}/version"
-        response = cache.make_request(url)
-        response.raise_for_status()
-        versions = response.json()
-        
-        # Cache project info
-        project_url = f"https://api.modrinth.com/v2/project/{slug}"
-        project_response = cache.make_request(project_url)
-        project_response.raise_for_status()
-        project_data = project_response.json()
-        
+        all_data = cache.get_all_data(slug)
+        if not all_data:
+            url = f"https://api.modrinth.com/v2/project/{slug}/version"
+            response = cache.make_request(url)
+            response.raise_for_status()
+            versions = response.json()
+
+            project_url = f"https://api.modrinth.com/v2/project/{slug}"
+            project_response = cache.make_request(project_url)
+            project_response.raise_for_status()
+            project_data = project_response.json()
+
+            cache.cache_all_data(slug, {"project": project_data, "versions": versions})
+        else:
+            project_data = all_data["project"]
+            versions = all_data["versions"]
+
         mod_info = ModInfo(
             name=project_data['title'],
             slug=slug,
@@ -252,7 +289,6 @@ def check_mod_version(slug: str, target_version: str, loader_type: str) -> ModIn
             available=False
         )
         
-        # Process version information
         compatible_version = None
         for ver in versions:
             if loader_type in ver['loaders'] and target_version in ver['game_versions']:
@@ -272,7 +308,6 @@ def check_mod_version(slug: str, target_version: str, loader_type: str) -> ModIn
         mod_info.versions = list(set(mod_info.versions))
         mod_info.versions.sort(key=lambda x: parse_minecraft_version(x), reverse=True)
         
-        # Cache the result
         cache.cache_data(slug, target_version, loader_type, {
             'name': mod_info.name,
             'slug': mod_info.slug,
@@ -287,7 +322,7 @@ def check_mod_version(slug: str, target_version: str, loader_type: str) -> ModIn
         })
         
         return mod_info
-        
+
     except requests.exceptions.RequestException as e:
         return ModInfo(
             name=slug,
