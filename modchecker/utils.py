@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Set
 
 from packaging import version
 from rich.console import Console
@@ -20,7 +20,10 @@ def sort_minecraft_versions(versions: List[str]) -> List[str]:
 
 
 def extract_modrinth_links(input_file: str) -> List[Dict[str, str]]:
+    """Extract Modrinth mod information from the given text file."""
     mods: List[Dict[str, str]] = []
+    slugs: Set[str] = set()
+
     with open(input_file, "r", encoding="utf-8") as f:
         content = f.read()
 
@@ -30,12 +33,14 @@ def extract_modrinth_links(input_file: str) -> List[Dict[str, str]]:
         url = match.group(2)
         slug = url.split("/")[-1].split(")")[0]
         mods.append({"name": name, "url": url, "slug": slug})
+        slugs.add(slug)
 
     url_pattern = r"https://modrinth\.com/mod/([^/\s)]+)"
     for match in re.finditer(url_pattern, content):
         slug = match.group(1)
-        if not any(mod["slug"] == slug for mod in mods):
+        if slug not in slugs:
             mods.append({"name": slug, "url": f"https://modrinth.com/mod/{slug}", "slug": slug})
+            slugs.add(slug)
 
     if not mods:
         console.print("[yellow]Warning: No Modrinth mod links found in the input file.[/]")

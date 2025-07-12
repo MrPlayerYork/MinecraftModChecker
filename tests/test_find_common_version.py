@@ -1,6 +1,12 @@
 import unittest
 import sys
 import types
+from pathlib import Path
+
+# Ensure the repository root is on the import path so that the mod_checker
+# module can be imported when tests are executed from within the tests
+# directory.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 # Provide a minimal stub for the requests module so that mod_checker can be
 # imported without having the real dependency installed.
