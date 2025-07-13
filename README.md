@@ -97,3 +97,8 @@ If the initial version/loader combination isn't compatible, the script will:
 - The script prioritizes finding a compatible version with your chosen loader before suggesting alternative loaders
 - The compatibility report provides a complete record of the process and results
 - Downloaded mods and dependencies are saved in the specified output directory
+
+- Recent changes have increased the speed and efficientcy of the script, however, there is a lot of type issues in the code. While this doesn't seem to effect the overall function, some features aren't working and I'd like to make the typing better anyway. Thus, a rewrite is planned and more commits will be coming in the future.
+
+## License (Short)
+<a href="https://github.com/MrPlayerYork/MinecraftModChecker">MinecraftModChecker</a> © 2025 by <a href="https://github.com/MrPlayerYork">MrPlayerYork</a> is licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/nc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/sa.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
